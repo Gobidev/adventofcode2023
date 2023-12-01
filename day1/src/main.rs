@@ -2,9 +2,8 @@ fn part1(input: &str) -> u32 {
     input
         .lines()
         .map(|line| {
-            let iter = line.chars().filter(|c| c.is_ascii_digit());
-            iter.clone().next().unwrap().to_digit(10).unwrap() * 10
-                + iter.last().unwrap().to_digit(10).unwrap()
+            let iter = line.chars().filter_map(|c| c.to_digit(10));
+            iter.clone().next().unwrap() * 10 + iter.last().unwrap()
         })
         .sum()
 }
