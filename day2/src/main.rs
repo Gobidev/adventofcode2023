@@ -6,29 +6,24 @@ struct Draw {
 }
 
 impl Draw {
-    fn new(r: u32, g: u32, b: u32) -> Self {
-        Self {
-            red: r,
-            green: g,
-            blue: b,
-        }
-    }
     fn from_string(string: &str) -> Self {
-        let mut r: u32 = 0;
-        let mut g: u32 = 0;
-        let mut b: u32 = 0;
+        let mut result = Self {
+            red: 0,
+            green: 0,
+            blue: 0,
+        };
         let split = string.split(',');
         for color in split {
             let mut split = color.trim().split(' ');
             let count: u32 = split.next().unwrap().parse().unwrap();
             match split.next().unwrap().trim() {
-                "red" => r = count,
-                "green" => g = count,
-                "blue" => b = count,
+                "red" => result.red = count,
+                "green" => result.green = count,
+                "blue" => result.blue = count,
                 _ => panic!(),
             }
         }
-        Self::new(r, g, b)
+        result
     }
 
     fn is_possible(&self) -> bool {
@@ -36,6 +31,9 @@ impl Draw {
             return false;
         }
         true
+    }
+    fn as_tuple(&self) -> (u32, u32, u32) {
+        (self.red, self.green, self.blue)
     }
 }
 
@@ -46,23 +44,24 @@ struct Game {
 }
 
 impl Game {
-    fn new(id: u32, draws: Vec<Draw>) -> Self {
-        Self { id, draws }
-    }
-
     fn from_line(line: &str) -> Self {
-        let mut split1 = line.split(':');
-        let id: u32 = split1
-            .next()
-            .unwrap()
-            .split(' ')
-            .last()
-            .unwrap()
-            .parse()
-            .unwrap();
-        let split2 = split1.next().unwrap().split(';');
-        let draws: Vec<Draw> = split2.map(Draw::from_string).collect();
-        Self::new(id, draws)
+        let mut split = line.split(':');
+        Self {
+            id: split
+                .next()
+                .unwrap()
+                .split(' ')
+                .last()
+                .unwrap()
+                .parse()
+                .unwrap(),
+            draws: split
+                .next()
+                .unwrap()
+                .split(';')
+                .map(Draw::from_string)
+                .collect(),
+        }
     }
 
     fn is_possible(&self) -> bool {
@@ -70,21 +69,10 @@ impl Game {
     }
 
     fn power(&self) -> u32 {
-        let mut min_red = 0;
-        let mut min_green = 0;
-        let mut min_blue = 0;
-        for draw in &self.draws {
-            if draw.red > min_red {
-                min_red = draw.red;
-            }
-            if draw.green > min_green {
-                min_green = draw.green;
-            }
-            if draw.blue > min_blue {
-                min_blue = draw.blue;
-            }
-        }
-        min_red * min_green * min_blue
+        let tuple_draws: Vec<_> = self.draws.iter().map(|draw| draw.as_tuple()).collect();
+        tuple_draws.iter().map(|(r, _, _)| r).max().unwrap_or(&0)
+            * tuple_draws.iter().map(|(_, g, _)| g).max().unwrap_or(&0)
+            * tuple_draws.iter().map(|(_, _, b)| b).max().unwrap_or(&0)
     }
 }
 
