@@ -44,12 +44,7 @@ impl Number {
         self.value.parse().expect("Invalid value")
     }
     fn is_adjacent(&self, position: &Position) -> bool {
-        for p in &self.positions {
-            if p.is_adjacent(position) {
-                return true;
-            }
-        }
-        false
+        self.positions.iter().any(|p| p.is_adjacent(position))
     }
 }
 
