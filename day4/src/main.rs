@@ -41,12 +41,11 @@ impl Card {
 }
 
 fn part1(cards: &[Card]) -> u32 {
-    let base: u32 = 2;
     cards
         .iter()
         .map(|card| match card.points_worth() {
             0 => 0,
-            c => base.pow(c - 1),
+            c => (c - 1) << 1,
         })
         .sum()
 }
