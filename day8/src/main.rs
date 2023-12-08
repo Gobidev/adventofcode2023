@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use num::integer::lcm;
+
 type Nodes = HashMap<String, (String, String)>;
 
 fn node_from_line(line: &str) -> (String, (String, String)) {
@@ -13,10 +15,10 @@ fn node_from_line(line: &str) -> (String, (String, String)) {
 }
 
 fn parse(input_str: &str) -> (String, Nodes) {
-    let mut lines_iter = input_str.lines();
-    let instructions = lines_iter.next().unwrap().to_string();
-    let nodes: Nodes = lines_iter.skip(1).map(node_from_line).collect();
-    (instructions, nodes)
+    (
+        input_str.lines().next().unwrap().to_string(),
+        input_str.lines().skip(2).map(node_from_line).collect(),
+    )
 }
 
 fn get_next_node(instruction: &char, current_node: &str, nodes: &Nodes) -> String {
@@ -29,11 +31,7 @@ fn get_next_node(instruction: &char, current_node: &str, nodes: &Nodes) -> Strin
 }
 
 fn part1(instructions: &str, nodes: &Nodes) -> u32 {
-    let mut current_node = nodes
-        .keys()
-        .find(|node| node.as_str() == "AAA")
-        .unwrap()
-        .clone();
+    let mut current_node = "AAA".to_string();
     let mut steps = 0;
     for instruction in instructions.chars().cycle() {
         if current_node == "ZZZ" {
@@ -46,13 +44,9 @@ fn part1(instructions: &str, nodes: &Nodes) -> u32 {
 }
 
 fn part2(instructions: &str, nodes: &Nodes) -> u64 {
-    let start_nodes: Vec<String> = nodes
+    nodes
         .keys()
         .filter(|node| node.ends_with('A'))
-        .cloned()
-        .collect();
-    start_nodes
-        .iter()
         .map(|start_node| {
             let mut steps: u64 = 0;
             let mut current_node = start_node.clone();
@@ -65,7 +59,7 @@ fn part2(instructions: &str, nodes: &Nodes) -> u64 {
             }
             steps
         })
-        .fold(1, num::integer::lcm)
+        .fold(1, lcm)
 }
 
 fn main() {
