@@ -9,33 +9,34 @@ enum Direction {
     South,
     West,
 }
+use Direction::*;
 
 impl Direction {
     fn from_positions(old_pos: Position, new_pos: Position) -> Self {
         if old_pos.1 < new_pos.1 {
-            Direction::East
+            East
         } else if old_pos.1 > new_pos.1 {
-            Direction::West
+            West
         } else if old_pos.0 < new_pos.0 {
-            Direction::South
+            South
         } else {
-            Direction::North
+            North
         }
     }
     fn to_position(&self, old_pos: Position) -> Position {
         match self {
-            Direction::North => (old_pos.0 - 1, old_pos.1),
-            Direction::East => (old_pos.0, old_pos.1 + 1),
-            Direction::South => (old_pos.0 + 1, old_pos.1),
-            Direction::West => (old_pos.0, old_pos.1 - 1),
+            North => (old_pos.0 - 1, old_pos.1),
+            East => (old_pos.0, old_pos.1 + 1),
+            South => (old_pos.0 + 1, old_pos.1),
+            West => (old_pos.0, old_pos.1 - 1),
         }
     }
     fn invert(&self) -> Self {
         match self {
-            Direction::North => Direction::South,
-            Direction::East => Direction::West,
-            Direction::South => Direction::North,
-            Direction::West => Direction::East,
+            North => South,
+            East => West,
+            South => North,
+            West => East,
         }
     }
 }
@@ -46,18 +47,13 @@ struct Pipe(Vec<Direction>);
 impl Pipe {
     fn from_char(c: char) -> Self {
         Self(match c {
-            '|' => vec![Direction::North, Direction::South],
-            '-' => vec![Direction::West, Direction::East],
-            'L' => vec![Direction::North, Direction::East],
-            'J' => vec![Direction::North, Direction::West],
-            '7' => vec![Direction::South, Direction::West],
-            'F' => vec![Direction::South, Direction::East],
-            'S' => vec![
-                Direction::North,
-                Direction::East,
-                Direction::South,
-                Direction::West,
-            ],
+            '|' => vec![North, South],
+            '-' => vec![West, East],
+            'L' => vec![North, East],
+            'J' => vec![North, West],
+            '7' => vec![South, West],
+            'F' => vec![South, East],
+            'S' => vec![North, East, South, West],
             _ => vec![],
         })
     }
@@ -68,40 +64,42 @@ fn parse(input_str: &str) -> (Vec<Vec<Pipe>>, Position) {
         .lines()
         .map(|line| line.chars().map(Pipe::from_char).collect())
         .collect();
+    // find start position
     let mut start_position = (0, 0);
-    for (l_idx, l) in pipe_map.iter().enumerate() {
+    'outer: for (l_idx, l) in pipe_map.iter().enumerate() {
         for (r_idx, pipe) in l.iter().enumerate() {
             if pipe.0.len() == 4 {
                 start_position = (l_idx, r_idx);
-                break;
+                break 'outer;
             }
         }
     }
     let mut start_pipe = vec![];
     if let Some(l) = pipe_map.get(start_position.0 - 1) {
         if let Some(p) = l.get(start_position.1) {
-            if p.0.contains(&Direction::South) {
-                start_pipe.push(Direction::North);
+            if p.0.contains(&South) {
+                start_pipe.push(North);
             }
         }
     }
     if let Some(l) = pipe_map.get(start_position.0 + 1) {
         if let Some(p) = l.get(start_position.1) {
-            if p.0.contains(&Direction::North) {
-                start_pipe.push(Direction::South);
+            if p.0.contains(&North) {
+                start_pipe.push(South);
             }
         }
     }
     if let Some(p) = pipe_map[start_position.0].get(start_position.1 - 1) {
-        if p.0.contains(&Direction::East) {
-            start_pipe.push(Direction::West);
+        if p.0.contains(&East) {
+            start_pipe.push(West);
         }
     }
     if let Some(p) = pipe_map[start_position.0].get(start_position.1 + 1) {
-        if p.0.contains(&Direction::West) {
-            start_pipe.push(Direction::East);
+        if p.0.contains(&West) {
+            start_pipe.push(East);
         }
     }
+    // replace start position with actual pipe
     pipe_map[start_position.0][start_position.1] = Pipe(start_pipe);
     (pipe_map, start_position)
 }
@@ -142,15 +140,13 @@ fn is_inside_loop(
 ) -> bool {
     let mut crossings = 0;
     let mut current_pos = position;
+    // we go up from the position and check how often we cross the loop
     while current_pos.0 != 0 {
         current_pos = (current_pos.0 - 1, current_pos.1);
         if !loop_positions.contains(&current_pos) {
             continue;
         }
-        if pipe_map[current_pos.0][current_pos.1]
-            .0
-            .contains(&Direction::East)
-        {
+        if pipe_map[current_pos.0][current_pos.1].0.contains(&East) {
             crossings += 1;
         }
     }
