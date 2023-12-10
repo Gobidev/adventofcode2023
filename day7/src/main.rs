@@ -21,35 +21,15 @@ fn card_to_int(card: char, part2: bool) -> u32 {
     }
 }
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, PartialOrd, Eq, Debug)]
 enum HandType {
-    FiveOfAKind,
-    FourOfAKind,
-    FullHouse,
-    ThreeOfAKind,
-    TwoPair,
-    OnePair,
     HighCard,
-}
-
-impl HandType {
-    fn type_strongness(&self) -> u32 {
-        match self {
-            HandType::FiveOfAKind => 7,
-            HandType::FourOfAKind => 6,
-            HandType::FullHouse => 5,
-            HandType::ThreeOfAKind => 4,
-            HandType::TwoPair => 3,
-            HandType::OnePair => 2,
-            HandType::HighCard => 1,
-        }
-    }
-}
-
-impl PartialOrd for HandType {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.type_strongness().partial_cmp(&other.type_strongness())
-    }
+    OnePair,
+    TwoPair,
+    ThreeOfAKind,
+    FullHouse,
+    FourOfAKind,
+    FiveOfAKind,
 }
 
 #[derive(PartialEq, Eq, Debug)]
@@ -78,7 +58,7 @@ impl Hand {
         if part2 && card_amounts.contains_key(&0) {
             let j_amount = *card_amounts.get(&0).unwrap();
             let mut amounts_vec: Vec<(u32, u32)> = card_amounts.clone().into_iter().collect();
-            amounts_vec.sort_by(|(_, v1), (_, v2)| v2.cmp(v1));
+            amounts_vec.sort_unstable_by(|(_, v1), (_, v2)| v2.cmp(v1));
             let most_frequent = match amounts_vec[0] {
                 (0, _) => amounts_vec.get(1).unwrap_or(&(0, 0)).0,
                 _ => amounts_vec[0].0,
@@ -126,10 +106,9 @@ impl PartialOrd for Hand {
 
 impl Ord for Hand {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        if self.hand_type > other.hand_type {
-            return std::cmp::Ordering::Greater;
-        } else if other.hand_type > self.hand_type {
-            return std::cmp::Ordering::Less;
+        let cmp = self.hand_type.partial_cmp(&other.hand_type).unwrap();
+        if cmp != std::cmp::Ordering::Equal {
+            return cmp;
         }
         for i in 0..5 {
             match self.cards[i].cmp(&other.cards[i]) {
