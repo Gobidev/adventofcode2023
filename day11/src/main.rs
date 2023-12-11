@@ -16,23 +16,12 @@ fn parse_input(input_str: &str) -> Vec<Vec<u8>> {
 
 fn find_empty_spaces(map: &[Vec<u8>]) -> (Vec<usize>, Vec<usize>) {
     (
-        map.iter()
-            .enumerate()
-            .filter(|(_, l)| l.iter().sum::<u8>() == 0)
-            .map(|(idx, _)| idx)
+        (0..map.len())
+            .filter(|l_idx| map[*l_idx].iter().all(|s| s == &0))
             .collect(),
-        {
-            let mut col_indices = vec![];
-            'outer: for c in 0..map[0].len() {
-                for r in map {
-                    if r[c] == 1 {
-                        continue 'outer;
-                    }
-                }
-                col_indices.push(c);
-            }
-            col_indices
-        },
+        (0..map[0].len())
+            .filter(|col_idx| map.iter().all(|l| l[*col_idx] == 0))
+            .collect(),
     )
 }
 
