@@ -1,10 +1,10 @@
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 enum Tile {
     RoundRock,
     CubeRock,
     Empty,
 }
-use std::fmt::Display;
+use std::{collections::HashMap, fmt::Display};
 
 use Tile::*;
 
@@ -68,17 +68,77 @@ fn tilt_north(map: &[Vec<Tile>]) -> Vec<Vec<Tile>> {
     new_map
 }
 
-fn part1(map: &[Vec<Tile>]) -> usize {
-    tilt_north(map)
-        .iter()
+fn transpose(map: &[Vec<Tile>]) -> Vec<Vec<Tile>> {
+    let mut res = vec![];
+    for c in 0..map[0].len() {
+        let mut row = vec![];
+        for r in map {
+            row.push(r[c].clone());
+        }
+        res.push(row);
+    }
+    res
+}
+
+fn reverse_lines(map: &[Vec<Tile>]) -> Vec<Vec<Tile>> {
+    let mut new = map.to_vec();
+    new.reverse();
+    new
+}
+
+fn reverse_columns(map: &[Vec<Tile>]) -> Vec<Vec<Tile>> {
+    map.to_vec()
+        .iter_mut()
+        .map(|l| {
+            l.reverse();
+            l.to_vec()
+        })
+        .collect()
+}
+
+fn north_beam_support(map: &[Vec<Tile>]) -> usize {
+    map.iter()
         .enumerate()
         .map(|(l_idx, line)| line.iter().filter(|t| t == &&RoundRock).count() * (map.len() - l_idx))
         .sum()
 }
 
+fn part1(map: &[Vec<Tile>]) -> usize {
+    north_beam_support(&tilt_north(map))
+}
+
+fn cycle_map(map: &[Vec<Tile>]) -> Vec<Vec<Tile>> {
+    // north
+    let mut current_map = tilt_north(map);
+    // west
+    current_map = transpose(&tilt_north(&transpose(&current_map)));
+    // south
+    current_map = reverse_lines(&tilt_north(&reverse_lines(&current_map)));
+    // east
+    current_map = reverse_columns(&transpose(&tilt_north(&transpose(&reverse_columns(
+        &current_map,
+    )))));
+    current_map
+}
+
+fn part2(map: &[Vec<Tile>]) -> usize {
+    let mut map_history: HashMap<Vec<Vec<Tile>>, usize> = HashMap::new();
+    let mut current_map = map.to_vec();
+    let mut count = 0;
+    while map_history.get(&current_map).is_none() {
+        map_history.insert(current_map.clone(), count);
+        current_map = cycle_map(&current_map);
+        count += 1;
+    }
+    let cycle_start = map_history.get(&current_map).unwrap();
+    for _ in 0..(1_000_000_000 - cycle_start) % (count - cycle_start) {
+        current_map = cycle_map(&current_map);
+    }
+    north_beam_support(&current_map)
+}
+
 fn main() {
     let input = parse(include_str!("../input.txt"));
     println!("{}", part1(&input));
-    // print_map(&input);
-    // print_map(&tilt_north(&input));
+    println!("{}", part2(&input));
 }
