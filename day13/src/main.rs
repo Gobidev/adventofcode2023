@@ -5,54 +5,25 @@ fn parse(input_str: &str) -> Vec<Vec<String>> {
         .collect()
 }
 
-fn check_mirror_correctness(block: &[String], lines_above: usize) -> bool {
-    if lines_above <= block.len() / 2 {
-        // mirror is in upper half -> check from top to bottom
-        for i in 0..lines_above {
-            if block[i] != block[2 * lines_above - i - 1] {
-                return false;
-            }
-        }
-        return true;
-    } else {
-        // mirror is in bottom half -> check from bottom to top
-        for i in lines_above..block.len() - 1 {
-            if block[i] != block[2 * lines_above - i - 1] {
-                return false;
-            }
-        }
-    }
-    true
+fn diff(str1: &str, str2: &str) -> usize {
+    str1.chars()
+        .zip(str2.chars())
+        .filter(|(c1, c2)| c1 != c2)
+        .count()
 }
 
-fn find_horizontal_mirror(block: &[String]) -> Option<usize> {
-    for occurance in block
-        .iter()
-        .enumerate()
-        .filter(|(_, l)| l == &&block[0])
-        .map(|(idx, _)| idx)
-        .skip(1)
-    {
-        let val = (occurance + occurance % 2) / 2;
-        if check_mirror_correctness(block, val) {
-            return Some(val);
+fn check_mirror_correctness(block: &[String], lines_above: usize) -> usize {
+    let mut errors = 0;
+    if lines_above <= block.len() / 2 {
+        for i in 0..lines_above {
+            errors += diff(&block[i], &block[2 * lines_above - i - 1]);
+        }
+    } else {
+        for i in lines_above..block.len() {
+            errors += diff(&block[i], &block[2 * lines_above - i - 1]);
         }
     }
-    let last = block.last().unwrap();
-    for occurance in block
-        .iter()
-        .enumerate()
-        .filter(|(_, l)| l == &last)
-        .map(|(idx, _)| idx)
-        .rev()
-        .skip(1)
-    {
-        let val = (block.len() - occurance + 1) / 2 + occurance;
-        if check_mirror_correctness(block, val) {
-            return Some(val);
-        }
-    }
-    None
+    errors
 }
 
 fn transpose(block: &[String]) -> Vec<String> {
@@ -67,21 +38,35 @@ fn transpose(block: &[String]) -> Vec<String> {
     res
 }
 
-fn part1(blocks: &[Vec<String>]) -> usize {
+fn mirror_sum(blocks: &[Vec<String>], error_count: usize) -> usize {
     let mut sum = 0;
-    for block in blocks {
-        if let Some(n) = find_horizontal_mirror(block) {
-            sum += 100 * n;
-            continue;
+    'outer: for block in blocks {
+        for above in 1..block.len() {
+            if check_mirror_correctness(block, above) == error_count {
+                sum += 100 * above;
+                continue 'outer;
+            }
         }
-        if let Some(n) = find_horizontal_mirror(&transpose(block)) {
-            sum += n;
+        let block_t = transpose(block);
+        for above in 1..block_t.len() {
+            if check_mirror_correctness(&block_t, above) == error_count {
+                sum += above;
+            }
         }
     }
     sum
 }
 
+fn part1(blocks: &[Vec<String>]) -> usize {
+    mirror_sum(blocks, 0)
+}
+
+fn part2(blocks: &[Vec<String>]) -> usize {
+    mirror_sum(blocks, 1)
+}
+
 fn main() {
     let input = parse(include_str!("../input.txt"));
     println!("{}", part1(&input));
+    println!("{}", part2(&input));
 }
