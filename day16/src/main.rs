@@ -1,3 +1,5 @@
+use std::{fmt::Display, thread, time::Duration};
+
 fn parse(input_str: &str) -> Vec<Vec<Tile>> {
     input_str
         .lines()
@@ -15,7 +17,7 @@ fn parse(input_str: &str) -> Vec<Vec<Tile>> {
         .collect()
 }
 
-type Position = (i64, i64);
+type Position = (isize, isize);
 
 #[derive(Debug, Clone)]
 struct Tile {
@@ -25,10 +27,18 @@ struct Tile {
 
 impl Display for Tile {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        if self.energized.is_some() {
-            write!(f, "#")
-        } else {
-            write!(f, ".")
+        match self.tile_type {
+            NorthSouthSplitter => write!(f, "|"),
+            WestEastSplitter => write!(f, "-"),
+            UpMirror => write!(f, "/"),
+            DownMirror => write!(f, "\\"),
+            Empty => {
+                if let Some(d) = self.energized {
+                    write!(f, "{d}")
+                } else {
+                    write!(f, ".")
+                }
+            }
         }
     }
 }
@@ -50,6 +60,7 @@ enum TileType {
     DownMirror,
     Empty,
 }
+use TileType::*;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum Direction {
@@ -58,9 +69,21 @@ enum Direction {
     South,
     West,
 }
+use Direction::*;
+
+impl Display for Direction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            North => write!(f, "^"),
+            East => write!(f, ">"),
+            South => write!(f, "v"),
+            West => write!(f, "<"),
+        }
+    }
+}
 
 impl Direction {
-    fn as_position(&self) -> (i64, i64) {
+    fn as_position(&self) -> Position {
         match self {
             North => (-1, 0),
             East => (0, 1),
@@ -140,12 +163,6 @@ impl Beam {
     }
 }
 
-use std::fmt::Display;
-
-use Direction::*;
-use TileType::*;
-
-#[allow(dead_code)]
 fn print_map(map: &[Vec<Tile>]) {
     println!(
         "{}",
@@ -155,25 +172,29 @@ fn print_map(map: &[Vec<Tile>]) {
     )
 }
 
+const PRINT: bool = false;
+
 fn calc_total_energized(map: &[Vec<Tile>], start_beam: Beam) -> usize {
     let mut map = map.to_vec();
     let mut beams = vec![start_beam];
     while !beams.is_empty() {
-        // remove out of bounds beams
+        if PRINT {
+            print_map(&map);
+            thread::sleep(Duration::from_millis(50));
+        }
+        // remove out of bounds beams and beam that travel on already travelled routes
         beams.retain(|beam| {
             0 <= beam.position.0
-                && beam.position.0 < map.len() as i64
+                && beam.position.0 < map.len() as isize
                 && 0 <= beam.position.1
-                && beam.position.1 < map[0].len() as i64
+                && beam.position.1 < map[0].len() as isize
+                && {
+                    match map[beam.position.0 as usize][beam.position.1 as usize].energized {
+                        None => true,
+                        Some(d) => d != beam.direction,
+                    }
+                }
         });
-        // check if beam already took the beams route
-        beams.retain(|beam| {
-            match map[beam.position.0 as usize][beam.position.1 as usize].energized {
-                None => true,
-                Some(d) => d != beam.direction,
-            }
-        });
-        // move beams
         let mut new_beams = vec![];
         for beam in &mut beams {
             if let Some(b) = beam.move_beam(&mut map) {
@@ -205,21 +226,21 @@ fn part2(map: &[Vec<Tile>]) -> usize {
     let mut possible_start_beams = vec![];
     for l in 0..map.len() {
         possible_start_beams.push(Beam {
-            position: (l as i64, 0),
+            position: (l as isize, 0),
             direction: East,
         });
         possible_start_beams.push(Beam {
-            position: (l as i64, map[0].len() as i64 - 1),
+            position: (l as isize, map[0].len() as isize - 1),
             direction: West,
         });
     }
     for c in 0..map[0].len() {
         possible_start_beams.push(Beam {
-            position: (0, c as i64),
+            position: (0, c as isize),
             direction: South,
         });
         possible_start_beams.push(Beam {
-            position: (map.len() as i64 - 1, c as i64),
+            position: (map.len() as isize - 1, c as isize),
             direction: North,
         });
     }
