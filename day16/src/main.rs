@@ -1,4 +1,5 @@
 use std::{fmt::Display, thread, time::Duration};
+use rayon::prelude::*;
 
 fn parse(input_str: &str) -> Vec<Vec<Tile>> {
     input_str
@@ -245,7 +246,7 @@ fn part2(map: &[Vec<Tile>]) -> usize {
         });
     }
     possible_start_beams
-        .iter()
+        .par_iter()
         .map(|beam| calc_total_energized(map, beam.clone()))
         .max()
         .unwrap()
